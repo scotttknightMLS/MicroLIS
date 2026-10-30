@@ -3,12 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Micro LIS Simulator</title>
-<meta name="claude:viewport-fit-sides" content="cover">
-<meta name="description" content="Simulated microbiology laboratory information system for MLT students. Fictitious patients. Not for clinical use.">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&display=swap">
+<title>Micro LIS | Clinical Microbiology Simulation</title>
+<meta name="theme-color" content="#1f2d34">
+<meta name="description" content="An interactive educational microbiology LIS for MLT students: specimen receipt, culture workup, critical-value reporting, and laboratory documentation. Fictitious patients only.">
+
 <style>
 /* Layout: LIS workstation. A dark system banner, a slim nav bar, then one working pane per screen.
    Clinical data (accessions, MRNs, times) in mono; everything else in serif. */
@@ -18,7 +16,7 @@
   --crit:#9e1f2a; --crit-bg:#fae8ea; --warn:#7a4f00; --warn-bg:#fbf0d8; --ok:#20603a; --ok-bg:#e2f1e7;
   --bar:#1f2d34; --bar-ink:#e6edf0; --bar-muted:#a9bac2;
   --label-bg:#ffffff; --label-ink:#000000; --label-line:#8a959a;
-  --serif:"Source Serif 4", Georgia, "Times New Roman", serif;
+  --serif:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
   --mono:"IBM Plex Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
   --r:6px;
 }
@@ -34,7 +32,7 @@
   --bar:#080d10; --bar-ink:#d6e0e4; --bar-muted:#8ea1a9; color-scheme:dark }
 
 *{box-sizing:border-box}
-body{background:var(--bg); color:var(--ink); font-family:var(--serif); font-size:16px; line-height:1.5}
+body{margin:0; background:var(--bg); color:var(--ink); font-family:var(--serif); font-size:15px; line-height:1.5}
 .wrap{max-width:1180px; margin:0 auto; padding-left:max(16px, env(safe-area-inset-left, 0px)); padding-right:max(16px, env(safe-area-inset-right, 0px))}
 h1,h2,h3{text-wrap:balance; line-height:1.2; margin:0}
 h1{font-size:1.6rem}
@@ -174,6 +172,141 @@ details[open] summary{margin-bottom:10px}
 .tile.good{border-left:5px solid var(--ok)}
 .tile.bad{border-left:5px solid var(--crit)}
 ol.steps{margin:0; padding-left:1.3rem; display:flex; flex-direction:column; gap:6px; max-width:72ch}
+/* Version 2: dashboard, workflow guidance and printable results */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:10px}
+.kpi{display:flex;flex-direction:column;gap:3px;padding:13px 15px;border:1px solid var(--line);border-radius:var(--r);background:var(--surface)}
+.kpi .k{font:500 .7rem var(--mono);text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.kpi .v{font:600 1.5rem var(--mono);font-variant-numeric:tabular-nums}
+.kpi.urgent{border-left:4px solid var(--crit)}
+.kpi.done{border-left:4px solid var(--ok)}
+.toolbar{display:flex;flex-wrap:wrap;gap:12px;align-items:end}
+.toolbar .field{flex:1 1 170px}
+.toolbar .field:first-child{flex:2 1 280px}
+.toolbar button{height:37px}
+.checklist{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:7px}
+.step{border:1px solid var(--line);border-radius:var(--r);padding:9px 11px;background:var(--surface);font-size:.83rem}
+.step .num{font:.72rem var(--mono);color:var(--muted);display:block;margin-bottom:3px}
+.step.done{border-color:var(--ok);background:var(--ok-bg)}
+.step.active{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.step.locked{opacity:.67}
+.step strong{display:block}
+.helptext{color:var(--muted);font-size:.89rem;line-height:1.45}
+.hint{border-left:3px solid var(--accent);background:var(--accent-soft);padding:10px 13px;font-size:.91rem}
+.callout{border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;background:var(--surface)}
+.callout p+p{margin-top:8px}
+.keycap{font-family:var(--mono);border:1px solid var(--line);padding:0 5px;border-radius:3px}
+.tablewrap table{min-width:730px}
+.theme-toggle{margin-left:6px}
+#worklist-empty{padding:16px;text-align:center;color:var(--muted)}
+@media(min-width:900px){nav.tabs .wrap{gap:6px}}
+@media(max-width:620px){.techform{margin-left:0;flex:1 1 100%}.techform input{flex:1;width:10rem}.theme-toggle{margin-left:auto}.panel{padding:13px}.report{padding:13px}.brand span{font-size:.68rem}}
+@media print{
+  body{background:#fff!important;color:#000!important}
+  body.printing header,body.printing #view,body.printing #flash,body.printing .skip{display:none!important}
+  body.printing #print-area{display:block!important}
+  body.printing main{padding:0!important;max-width:none!important}
+  body.printing #print-area .report{border:0!important;padding:0!important;color:#000!important}
+  body.printing #print-area .tube-label{margin:12px 0;width:2in;height:1in;aspect-ratio:auto}
+  body.printing #print-area .tube-label .lb{padding:2px 3px;font-size:6pt;line-height:1.12}
+  body.printing #print-area .tube-label .ln{font-size:7pt}
+  body.printing #print-area .tube-label .la{font-size:9pt;letter-spacing:0}
+  body.printing #print-area .tube-label .statbar{font-size:6pt}
+  body.printing #print-area figcaption{display:none}
+  body.printing #print-area .report table{min-width:0}
+  @page{margin:14mm}
+}
+
+
+.biochem-panel{border:1px solid var(--line);border-radius:8px;padding:14px;background:var(--surface);display:flex;flex-direction:column;gap:10px}
+.biochem-panel h4{font-size:1rem;margin:0}
+.biochem-panel table{min-width:560px}
+.isolate>form[data-form="update-isolate"]{padding:12px;border:1px dashed var(--line);border-radius:8px;background:var(--accent-soft)}
+
+
+.mobile-rail-hint{display:none;font-size:.75rem;color:var(--muted);padding:0 5px;margin-top:-5px}
+@media(max-width:800px){.mobile-rail-hint{display:block}}
+
+/* v3 — course workstation UI: clear hierarchy and one bench station at a time. */
+:root{--bg:#f1f5f8;--surface:#fff;--sunk:#f5f8fb;--ink:#172839;--muted:#526677;--line:#d5e0e8;--accent:#165a79;--accent-soft:#eaf4f9;--bar:#152b3a;--r:10px}
+body{font-size:15px;line-height:1.52}
+.wrap{max-width:1380px;padding-inline:max(24px,env(safe-area-inset-left,0px)) max(24px,env(safe-area-inset-right,0px))}
+.sys .wrap{padding-block:13px}.brand{gap:16px;align-items:center}.brand strong{font-size:1.28rem;letter-spacing:-.04em}.brand span{font-size:.7rem}
+.warnband{background:#e4eef3;color:#284a5d;font-size:.68rem;letter-spacing:.085em}
+.warnband .wrap{padding-block:6px}
+nav.tabs{position:sticky;top:0;z-index:12;box-shadow:0 2px 6px rgba(15,39,54,.05)}
+nav.tabs .wrap{gap:5px;padding-block:8px}
+nav.tabs a{font-family:var(--serif);font-size:.85rem;font-weight:650;padding:9px 13px}
+nav.tabs a[aria-current="page"]{box-shadow:0 2px 5px rgba(10,54,74,.13)}
+.techform{font-family:var(--serif);font-weight:600}
+.techform input{min-height:37px}
+main{padding-block:28px 64px}.stack{gap:17px}
+h1{font-size:clamp(1.6rem,2.4vw,2rem);letter-spacing:-.035em}h2{letter-spacing:-.02em}
+.panel{padding:23px;border-radius:10px;box-shadow:0 2px 12px rgba(18,43,59,.025)}
+.lede{max-width:76ch;line-height:1.58}
+.eyebrow{font-size:.69rem;letter-spacing:.095em;font-weight:650}
+button,a.btnlink{font-family:var(--serif);font-weight:650;border-radius:7px;padding:9px 14px;min-height:38px;font-size:.86rem}
+button:hover:not(:disabled),a.btnlink:hover{filter:brightness(.92)}
+input,select,textarea{min-height:39px;border-color:#bdcdd7;border-radius:7px;padding:9px 11px}
+input[type="checkbox"]{min-height:0;accent-color:var(--accent)}
+button.secondary{background:var(--surface)}button.small{padding:6px 10px;min-height:30px;font-size:.8rem}
+label{font-size:.86rem}.field small{display:block;line-height:1.3;margin-top:1px}
+.pill{font-size:.7rem;font-weight:600;letter-spacing:.025em;padding:3px 8px}
+.kpi{padding:16px 17px;gap:6px;box-shadow:0 1px 5px rgba(18,43,59,.03)}.kpi .v{font-family:var(--serif);font-size:1.9rem;line-height:1.1;letter-spacing:-.04em}
+.kpi .k{font-family:var(--serif);font-weight:700;letter-spacing:.02em;font-size:.7rem}
+.kpis{gap:12px}
+.tablewrap table{min-width:740px}
+th{font-size:.68rem;letter-spacing:.06em} td{padding:13px 10px}tbody tr:hover{background:var(--accent-soft)}
+a.row-open{text-decoration:none;font-weight:700;white-space:nowrap}a.row-open:hover{text-decoration:underline}
+.lab-path{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.lab-path>div{border:1px solid var(--line);border-radius:9px;padding:11px 12px;background:var(--surface);font-size:.81rem;color:var(--muted)}
+.lab-path b{color:var(--ink);display:block;font-size:.84rem;margin-bottom:3px}
+.lab-path .path-number{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;background:var(--accent-soft);color:var(--accent);font-weight:750;margin-right:6px}
+.case-page{gap:18px}
+.case-top{display:flex;flex-wrap:wrap;gap:10px 15px;align-items:center;justify-content:space-between}
+.case-top .actionrow{display:flex;flex-wrap:wrap;align-items:center;gap:9px}
+.casehead h1{font-size:1.75rem}
+.pbanner{grid-template-columns:repeat(4,minmax(0,1fr));padding:15px 20px;border-left-width:4px;gap:14px 18px}
+.pbanner .v{font-size:.9rem;overflow-wrap:anywhere}.pbanner .v.name{font-size:1.02rem}
+.case-shell{display:grid;grid-template-columns:235px minmax(0,1fr);align-items:start;gap:20px}
+.case-rail{position:sticky;top:77px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.rail-nav{border:1px solid var(--line);background:var(--surface);border-radius:11px;padding:9px;display:flex;flex-direction:column;gap:4px;box-shadow:0 4px 13px rgba(20,47,63,.035)}
+.rail-header{padding:7px 10px 11px;border-bottom:1px solid var(--line);margin-bottom:5px}
+.rail-header .eyebrow{display:block;margin-bottom:5px}
+.rail-header strong{display:block;font-size:.93rem}
+.station-btn{display:flex;gap:10px;align-items:center;text-align:left;width:100%;border:1px solid transparent;background:transparent;color:var(--ink);padding:10px 9px;font-size:.86rem;min-height:46px;font-family:var(--serif);font-weight:600;box-shadow:none}
+.station-btn:hover{background:var(--sunk)}.station-btn[aria-current="step"]{border-color:#c4e0eb;background:var(--accent-soft);color:var(--accent)}
+.station-btn .station-n{width:25px;height:25px;border-radius:7px;border:1px solid var(--line);display:grid;place-items:center;flex:none;font-family:var(--mono);font-size:.73rem;color:var(--muted);background:var(--surface)}
+.station-btn .station-n.complete{background:var(--ok-bg);color:var(--ok);border-color:transparent}
+.station-btn .station-label{flex:1}.station-btn .station-flag{font-size:.67rem;color:var(--ok)}
+.rail-note{border-radius:8px;padding:13px;background:var(--accent-soft);color:var(--ink);font-size:.8rem;line-height:1.5}
+.rail-note strong{display:block;margin-bottom:4px}
+.case-stage{min-width:0;display:flex;flex-direction:column;gap:16px}
+.station-heading{display:flex;align-items:start;justify-content:space-between;gap:12px;padding:3px 1px 0}
+.station-heading h2{font-size:1.5rem;margin:4px 0 7px}.station-heading p{color:var(--muted);font-size:.91rem;max-width:68ch}
+.station-heading .station-count{background:var(--accent-soft);padding:6px 10px;color:var(--accent);border-radius:8px;font-family:var(--mono);font-size:.69rem;white-space:nowrap}
+.case-grid{display:block}.case-grid > *{width:100%}
+.case-stage [data-case-section][hidden]{display:none!important}
+.case-stage .panel{padding:22px}.case-stage form.panel>h2,.case-stage section.panel>h2{font-size:1.1rem}
+.case-stage .orgrow{align-items:end}
+.case-stage .orgrow .field{flex:1 1 180px}
+.case-stage .checklist{grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+.case-stage .step{padding:12px}
+.station-intro{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:21px}
+.station-intro h3{font-size:1.05rem;margin-bottom:8px}.station-intro p+p{margin-top:8px}
+.worksheet-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.readiness{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.readiness-item{border:1px solid var(--line);border-radius:8px;padding:9px 11px;display:flex;align-items:center;gap:8px;font-size:.83rem;background:var(--sunk)}
+.readiness-item.ready{border-color:#badcc6;background:var(--ok-bg);color:var(--ok)}
+.readiness-item span{font-family:var(--mono);font-weight:700}
+.lab-mini{font-size:.83rem;color:var(--muted)}
+.case-stage .critbox{background:var(--crit-bg)}
+.stations-hint{display:flex;gap:8px;flex-wrap:wrap}
+.stations-hint>a{font-size:.83rem}
+@media(max-width:1100px){.wrap{padding-inline:18px}.case-shell{grid-template-columns:202px minmax(0,1fr);gap:14px}.pbanner{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:800px){.case-shell{display:block}.case-rail{position:static;margin-bottom:16px}.rail-nav{display:flex;flex-direction:row;overflow-x:auto;padding:8px;gap:6px;scroll-snap-type:x mandatory}.rail-header{display:none}.station-btn{width:auto;flex:none;white-space:nowrap;scroll-snap-align:start;min-height:41px;padding:7px 10px}.station-btn .station-flag{display:none}.rail-note{display:none}.pbanner{grid-template-columns:repeat(2,minmax(0,1fr))}.case-stage .checklist{grid-template-columns:repeat(2,minmax(0,1fr))}.lab-path{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:620px){.wrap{padding-inline:12px}.sys .wrap{padding-block:9px}.brand{gap:7px}.brand strong{font-size:1.1rem}.brand span{font-size:.63rem}.warnband{font-size:.61rem}nav.tabs .wrap{gap:3px}nav.tabs a{padding:7px 8px;font-size:.79rem}.techform{flex-basis:100%}.panel,.case-stage .panel{padding:15px}.pbanner{grid-template-columns:repeat(2,minmax(0,1fr));padding:13px;gap:12px}.casehead h1{font-size:1.38rem}.station-heading h2{font-size:1.25rem}.station-heading .station-count{display:none}.case-stage .checklist,.readiness{grid-template-columns:1fr}.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.lab-path{grid-template-columns:1fr 1fr}.case-stage .orgrow .field{flex:1 1 100%}.case-stage .orgrow button{width:100%}.case-stage .isolate .orgrow button{width:100%}.case-top .actionrow{width:100%}}
+@media print{nav.tabs{position:static!important}.case-rail,.station-heading{display:none!important}}
+
 @media (prefers-reduced-motion: reduce){*{transition:none!important; animation:none!important}}
 </style>
 
@@ -182,7 +315,7 @@ ol.steps{margin:0; padding-left:1.3rem; display:flex; flex-direction:column; gap
 <a class="skip" href="#main">Skip to main content</a>
 <header>
   <div class="sys"><div class="wrap">
-    <div class="brand"><strong>Micro LIS Simulator</strong><span>Microbiology · Student Laboratory</span></div>
+    <div class="brand"><strong>MICRO / LIS</strong><span>Microbiology · MLT training workstation · v3</span></div>
     <div class="savestate" id="savestate" aria-live="polite"></div>
   </div></div>
   <div class="warnband"><div class="wrap">EDUCATIONAL SIMULATION · FICTITIOUS PATIENTS · NOT FOR CLINICAL USE</div></div>
@@ -191,7 +324,9 @@ ol.steps{margin:0; padding-left:1.3rem; display:flex; flex-direction:column; gap
     <a href="#order" data-route="order">Order entry</a>
     <a href="#receive" data-route="receive">Specimen receipt</a>
     <a href="#audit" data-route="audit">Audit log</a>
-    <a href="#storage" data-route="storage">Storage test</a>
+    <a href="#guide" data-route="guide">Lab exercises</a>
+    <a href="#storage" data-route="storage">Save &amp; transfer</a>
+    <button type="button" class="small secondary theme-toggle" data-act="theme" id="theme-toggle" aria-label="Toggle light and dark mode">Theme</button>
     <form class="techform" data-form="tech" aria-label="Signed-in technologist">
       <label for="techname" style="font-weight:400">Tech</label>
       <input id="techname" name="tech" class="mono" autocomplete="off" placeholder="Name or initials" required>
@@ -202,6 +337,7 @@ ol.steps{margin:0; padding-left:1.3rem; display:flex; flex-direction:column; gap
 <main id="main" class="wrap" tabindex="-1">
   <div id="flash" class="msg" role="status" aria-live="polite"></div>
   <div id="view"></div>
+  <div id="print-area" hidden></div>
 </main>
 
 <script>
@@ -214,6 +350,7 @@ const APP = "mlt-sim-lis-micro";
 const DKEY = "mltlis.device";
 const SKEY = "mltlis.micro.v1";
 const SSKEY = "mltlis.sessionloads";
+const THEMEKEY = "mltlis.theme";
 const LAB = { name: "MLT Student Microbiology Laboratory (simulated)", addr: "Northwood Technical College, New Richmond campus, New Richmond, WI" };
 
 const CULTURES = {
@@ -230,7 +367,8 @@ const QTY = {
   urine: ["<10,000 CFU/mL","10,000–49,000 CFU/mL","50,000–99,000 CFU/mL","≥100,000 CFU/mL"],
   semi:  ["Rare","Few","Moderate","Many","Isolated from blood culture bottle","Growth in broth only"]
 };
-const ID_METHODS = ["MALDI-TOF MS","Automated ID system","Commercial kit","Conventional biochemicals","Rapid tests"];
+const ID_METHODS = ["Pending identification","MALDI-TOF MS","Automated ID system","Commercial kit","Conventional biochemicals","Rapid tests"];
+const BIOCHEM = ["Catalase","Slide coagulase","Tube coagulase","Oxidase","PYR","Bile esculin","Growth in 6.5% NaCl","CAMP","Bacitracin","Optochin","Indole","Methyl red","Voges-Proskauer","Citrate","Urease","Motility","Hydrogen sulfide (H2S)","Lysine decarboxylase","Ornithine decarboxylase","Phenylalanine deaminase","Lactose fermentation","Glucose fermentation","Gas production","Nitrate reduction","ONPG","TSI slant / butt","Other"];
 const CELLS = ["None seen","Rare","Few","Moderate","Many"];
 const MORPH = ["Gram-positive cocci in clusters","Gram-positive cocci in chains","Gram-positive cocci in pairs","Gram-positive bacilli","Gram-negative bacilli","Gram-negative coccobacilli","Gram-negative diplococci","Yeast","Mixed bacterial morphotypes"];
 const ORGQ = ["Rare","Few","Moderate","Many"];
@@ -244,6 +382,43 @@ const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({"&":"&amp
 const pad = n => String(n).padStart(2, "0");
 function fmt(iso){ if(!iso) return "—"; const d = new Date(iso); if(isNaN(d)) return "—"; return `${pad(d.getMonth()+1)}/${pad(d.getDate())}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`; }
 function fmtDate(ymd){ if(!ymd) return "—"; const [y,m,d] = ymd.split("-"); return `${m}/${d}/${y}`; }
+function withinDateBounds(value, earliest){
+  const time = new Date(value).getTime();
+  if(!Number.isFinite(time)) return false;
+  return (!earliest || time >= new Date(earliest).getTime()) && time <= Date.now()+5*60000;
+}
+function safeReportHTML(html){
+  // Reports stored in a save file are untrusted. Only a small formatting whitelist is rendered.
+  const doc = new DOMParser().parseFromString(String(html || ""), "text/html");
+  const tags = new Set(["div","p","strong","em","br","dl","dt","dd","h4","table","thead","tbody","tr","th","td"]);
+  const classes = new Set(["report","rh","status","corr","tablewrap","mono"]);
+  const discard = new Set(["script","style","iframe","svg","math","object","embed","form","input","button","link","meta","template"]);
+  const walk = node => {
+    if(node.nodeType===Node.TEXT_NODE) return esc(node.nodeValue);
+    if(node.nodeType!==Node.ELEMENT_NODE) return "";
+    const tag=node.tagName.toLowerCase();
+    if(discard.has(tag)) return "";
+    const body=Array.from(node.childNodes,walk).join("");
+    if(!tags.has(tag)) return body;
+    if(tag==="br") return "<br>";
+    const cls=Array.from(node.classList).filter(c=>classes.has(c)).join(" ");
+    return `<${tag}${cls ? ` class="${cls}"` : ""}>${body}</${tag}>`;
+  };
+  return Array.from(doc.body.childNodes,walk).join("");
+}
+function validState(s){
+  if(!s || s.app!==APP || !Array.isArray(s.patients) || !Array.isArray(s.accessions) || !Array.isArray(s.audit) || !Number.isSafeInteger(s.seq) || s.seq<1) return false;
+  if(!s.patients.every(p=>p && /^[A-Za-z0-9_-]{1,20}$/.test(p.id) && typeof p.last==="string" && typeof p.first==="string" && /^\d{4,12}$/.test(p.mrn) && /^\d{4}-\d{2}-\d{2}$/.test(p.dob))) return false;
+  const ids=new Set(s.patients.map(p=>p.id));
+  const accs=new Set();
+  for(const a of s.accessions){
+    if(!a || typeof a.acc!=="string" || !/^M\d{7}[A-Z]$/.test(a.acc) || checkChar(a.acc.slice(0,8))!==a.acc[8] || accs.has(a.acc) || !ids.has(a.pid) || !Object.prototype.hasOwnProperty.call(CULTURES,a.culture) || !Array.isArray(a.reads) || !Array.isArray(a.isolates) || !Array.isArray(a.calls) || !Array.isArray(a.reports) || !a.flags || ![null,true,false].includes(a.receipt?.ok ?? null)) return false;
+    accs.add(a.acc);
+    if(a.isolates.some(i=>!i || !Array.isArray(i.ast) || (i.tests!==undefined && (!Array.isArray(i.tests) || i.tests.some(t=>!t || typeof t.test!=="string" || typeof t.result!=="string" || typeof t.note!=="string"))))) return false;
+    if(a.reports.some(r=>!r || typeof r.html!=="string" || !Number.isSafeInteger(r.version) || r.version<1 || !["Preliminary","Final","Corrected"].includes(r.type))) return false;
+  }
+  return s.audit.every(e=>e && typeof e.action==="string" && typeof e.by==="string" && typeof e.detail==="string" && typeof e.at==="string" && (e.acc==="" || (typeof e.acc==="string" && accs.has(e.acc))));
+}
 function nowISO(){ return new Date().toISOString(); }
 function localInputNow(offsetMin){ const d = new Date(Date.now() + (offsetMin||0)*60000); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0,16); }
 function fromLocalInput(v){ const d = new Date(v); return isNaN(d) ? null : d.toISOString(); }
@@ -285,7 +460,7 @@ function save(){
 function load(){
   const raw = lsGet(SKEY);
   if(raw){ try { S = JSON.parse(raw); } catch(e){ S = null; } }
-  if(!S || S.app !== APP){ S = seed(); env.seededThisLoad = true; save(); }
+  if(!validState(S)){ S = seed(); env.seededThisLoad = true; save(); }
   else { env.lastSaveOK = env.storageOK; env.lastSaveAt = S.savedAt; }
 }
 function audit(acc, action, detail){ S.audit.push({ at: nowISO(), by: S.tech || "(not signed in)", acc: acc||"", action, detail: detail||"" }); }
@@ -298,7 +473,7 @@ const normAcc = s => String(s||"").toUpperCase().replace(/[^A-Z0-9]/g,"");
 const showAcc = a => a.length===9 ? `${a.slice(0,3)}-${a.slice(3,8)}-${a.slice(8)}` : a;
 function lookupAcc(input){
   const n = normAcc(input);
-  if(!/^M\d{7}[A-Z]$/.test(n)) return { err: "That is not an accession number. Accessions look like M26-01004-K: the letter M, seven digits, and a check letter." };
+  if(!/^M\d{7}[A-Z]$/.test(n)) return { err: "That is not an accession number. Accessions look like M26-00001-T: the letter M, seven digits, and a check letter (illustrative 2026 accession)." };
   if(checkChar(n.slice(0,8)) !== n[8]) return { err: "The check letter does not match. One or more characters were copied or typed wrong. Re-read the tube label." };
   const a = S.accessions.find(x => x.acc === n);
   if(!a) return { err: `No order exists for ${showAcc(n)}.` };
@@ -349,12 +524,20 @@ function status(a){
   return "Received";
 }
 function nextStep(a){
-  const st = status(a);
-  if(criticalDue(a)) return "Call critical result";
-  return ({ Ordered:"Receive specimen", Received:"Set up media", "In culture":"Read and report", Preliminary:"Finalize", Final:"—", Corrected:"—", Rejected:"Recollection requested" })[st];
+  const st=status(a);
+  if(criticalDue(a)) return "Document critical call";
+  if(st==="Rejected") return "Recollection requested";
+  if(st==="Final" || st==="Corrected") return "Review released report";
+  if(!a.receipt) return "Receive specimen";
+  if(!a.media) return "Set up culture";
+  if(a.culture==="Blood culture" && !a.gram) return "Record Gram stain";
+  if(!a.reads.length && !a.isolates.length) return "Record plate read";
+  if(!a.isolates.length && !a.stmt) return "Identify isolate";
+  if(st==="Preliminary") return "Continue workup";
+  return "Review and release";
 }
 function criticalRequired(a){ return !!(CULTURES[a.culture].critical && a.gram && a.gram.orgs.length); }
-function validCall(c){ return c.readback && String(c.name).trim().split(/\s+/).length >= 2; }
+function validCall(c){ return !!(c && c.readback && String(c.name||"").trim().split(/\s+/).length>=2 && String(c.where||"").trim() && String(c.result||"").trim() && Number.isFinite(Date.parse(c.at))); }
 function criticalDue(a){
   if(!criticalRequired(a)) return false;
   return !a.calls.some(c => validCall(c) && c.recorded >= a.gram.at);
@@ -364,10 +547,10 @@ function criticalDue(a){
 function route(){
   const h = (location.hash||"").replace(/^#/,"");
   if(h.startsWith("case-")) return { name:"case", acc: normAcc(h.slice(5)) };
-  if(["worklist","order","receive","audit","storage"].includes(h)) return { name:h };
+  if(["worklist","order","receive","audit","storage","guide"].includes(h)) return { name:h };
   return { name:"worklist" };
 }
-let ui = { lastCreated: null, receiveAcc: null, auditFilter: "", importPending: null, focusMain: false };
+let ui = { lastCreated: null, receiveAcc: null, auditFilter: "", importPending: null, focusMain: false, caseTab: null, caseAcc: null, caseDirty: false };
 
 /* ---------- top chrome ---------- */
 function paintSaveState(){
@@ -376,6 +559,8 @@ function paintSaveState(){
   else el.innerHTML = `<span class="dot bad" aria-hidden="true"></span>Not saving in this browser. Use a save code.`;
 }
 function paintNav(r){
+  const themeBtn = $("#theme-toggle");
+  if(themeBtn){ const dark = document.documentElement.dataset.theme === "dark" || (!document.documentElement.dataset.theme && matchMedia("(prefers-color-scheme: dark)").matches); themeBtn.textContent = dark ? "Light mode" : "Dark mode"; themeBtn.setAttribute("aria-pressed",String(dark)); }
   document.querySelectorAll("nav.tabs a").forEach(a => {
     if(a.dataset.route === r.name || (r.name==="case" && a.dataset.route==="worklist")) a.setAttribute("aria-current","page");
     else a.removeAttribute("aria-current");
@@ -392,30 +577,73 @@ function needTech(){
 
 /* ---------- views ---------- */
 function vWorklist(){
-  const rows = S.accessions.slice().reverse().map(a => {
-    const p = patient(a.pid), st = status(a);
-    return `<tr>
+  const counts = {
+    total:S.accessions.length,
+    unreceived:S.accessions.filter(a=>!a.receipt).length,
+    processing:S.accessions.filter(a=>["Received","In culture","Preliminary"].includes(status(a))).length,
+    final:S.accessions.filter(a=>["Final","Corrected"].includes(status(a))).length,
+    critical:S.accessions.filter(criticalDue).length
+  };
+  const rows = S.accessions.slice().reverse().map(a=>{
+    const p=patient(a.pid), st=status(a);
+    return `<tr data-worklist-row data-status="${esc(st)}" data-priority="${esc(a.priority)}">
       <td class="mono"><a href="#case-${a.acc}">${showAcc(a.acc)}</a></td>
       <td>${esc(pname(p))}<br><span class="mono" style="font-size:.8rem;color:var(--muted)">MRN ${esc(p.mrn)}</span></td>
       <td>${esc(a.culture)}<br><span style="font-size:.85rem;color:var(--muted)">${esc(a.site)}</span></td>
       <td>${a.priority==="STAT" ? '<span class="pill stat">STAT</span>' : '<span class="pill">Routine</span>'}</td>
       <td class="mono">${fmt(a.collected)}</td>
       <td><span class="pill ${st.replace(" ","-")}">${esc(st)}</span>${a.example ? ' <span class="pill ex" title="Seeded example">Example</span>' : ""}</td>
-      <td>${criticalDue(a) ? '<span class="pill crit">Critical call due</span>' : esc(nextStep(a))}</td>
+      <td><a class="row-open" href="#case-${a.acc}">${criticalDue(a) ? "Critical call due" : esc(nextStep(a))} →</a></td>
     </tr>`;
   }).join("");
   return `<div class="stack">
-    <div class="row" style="justify-content:space-between">
-      <div class="stack" style="gap:6px"><h1>Microbiology worklist</h1>
-      <p class="lede">Every specimen ordered in this browser, newest first. Open an accession to set up media, record Gram stains and plate reads, enter isolates and susceptibilities, and release reports.</p></div>
-      <a class="btnlink" href="#order">New order</a>
+    <div class="row" style="justify-content:space-between;align-items:center">
+      <div class="stack" style="gap:5px"><div class="eyebrow">Workbench / Microbiology</div><h1>Specimen worklist</h1>
+      <p class="lede">A hands-on clinical microbiology laboratory information system. Open an assigned accession, perform the bench workflow, and export your evidence when finished.</p></div>
+      <a class="btnlink" href="#order">+ New order</a>
     </div>
-    <div class="panel tablewrap">
-      <table><caption class="eyebrow" style="text-align:left;padding-bottom:8px">${S.accessions.length} accession${S.accessions.length===1?"":"s"}</caption>
-      <thead><tr><th scope="col">Accession</th><th scope="col">Patient</th><th scope="col">Culture / site</th><th scope="col">Priority</th><th scope="col">Collected</th><th scope="col">Status</th><th scope="col">Next step</th></tr></thead>
-      <tbody>${rows || `<tr><td colspan="7">No accessions yet. Start with Order entry.</td></tr>`}</tbody></table>
+    <div class="lab-path" aria-label="Student workflow">
+      <div><b><span class="path-number">1</span>Sign in</b>Enter your name or student initials above.</div>
+      <div><b><span class="path-number">2</span>Open a case</b>Use the worklist or create an order.</div>
+      <div><b><span class="path-number">3</span>Record your bench work</b>Use one station at a time.</div>
+      <div><b><span class="path-number">4</span>Save your evidence</b>Download a case summary for your instructor.</div>
     </div>
+    <div class="kpis" aria-label="Worklist summary">
+      <div class="kpi"><span class="k">Total accessions</span><span class="v">${counts.total}</span></div>
+      <div class="kpi"><span class="k">Awaiting receipt</span><span class="v">${counts.unreceived}</span></div>
+      <div class="kpi"><span class="k">In process</span><span class="v">${counts.processing}</span></div>
+      <div class="kpi done"><span class="k">Final / corrected</span><span class="v">${counts.final}</span></div>
+      <div class="kpi ${counts.critical ? "urgent":""}"><span class="k">Critical calls due</span><span class="v">${counts.critical}</span></div>
+    </div>
+    ${env.seededThisLoad ? `<div class="hint"><strong>Practice cases are ready.</strong> The example blood culture starts at Gram stain; the urine culture starts at receipt. <a href="#guide">Open lab exercises</a> for station instructions.</div>` : ""}
+    <section class="panel stack" aria-label="Worklist table and filters">
+      <div class="toolbar">
+        <div class="field"><label for="wl-search">Search specimen or patient</label><input id="wl-search" type="search" placeholder="Accession, patient, MRN, culture, or site" autocomplete="off"></div>
+        <div class="field"><label for="wl-status">Status</label><select id="wl-status"><option value="">All statuses</option>${["Ordered","Received","In culture","Preliminary","Final","Corrected","Rejected"].map(x=>`<option>${x}</option>`).join("")}</select></div>
+        <div class="field"><label for="wl-priority">Priority</label><select id="wl-priority"><option value="">All priorities</option><option>STAT</option><option>Routine</option></select></div>
+        <button class="secondary" type="button" data-act="clear-filters">Clear filters</button>
+      </div>
+      <p class="helptext" id="wl-count" role="status" aria-live="polite">Showing ${counts.total} of ${counts.total} accessions</p>
+      <div class="tablewrap"><table><thead><tr><th scope="col">Accession</th><th scope="col">Patient</th><th scope="col">Culture / site</th><th scope="col">Priority</th><th scope="col">Collected</th><th scope="col">Status</th><th scope="col">Next step</th></tr></thead>
+        <tbody>${rows || '<tr><td colspan="7">No accessions yet. Begin with Order entry.</td></tr>'}</tbody></table>
+      </div>
+      <p id="worklist-empty" hidden>No specimens match these filters.</p>
+    </section>
   </div>`;
+}
+function filterWorklist(){
+  const input=$("#wl-search"), status=$("#wl-status"), priority=$("#wl-priority");
+  if(!input || !status || !priority) return;
+  const q=input.value.toLowerCase().replace(/[^a-z0-9]+/g,""), st=status.value, pri=priority.value;
+  let shown=0;
+  const rows=[...document.querySelectorAll("[data-worklist-row]")];
+  for(const tr of rows){
+    const content=tr.textContent.toLowerCase().replace(/[^a-z0-9]+/g,"");
+    const ok=(!q || content.includes(q)) && (!st || tr.dataset.status===st) && (!pri || tr.dataset.priority===pri);
+    tr.hidden=!ok; if(ok) shown++;
+  }
+  $("#wl-count").textContent=`Showing ${shown} of ${rows.length} accessions`;
+  const empty=$("#worklist-empty"); if(empty) empty.hidden=shown>0 || rows.length===0;
 }
 
 function labelHTML(a){
@@ -440,7 +668,7 @@ function vOrder(){
   const ptOpts = S.patients.map(p => `<option value="${p.id}">${esc(pname(p))} · MRN ${p.mrn} · DOB ${fmtDate(p.dob)}</option>`).join("");
   return `<div class="stack">
     <div class="stack" style="gap:6px"><h1>Order entry</h1>
-    <p class="lede">Confirm two identifiers before you order. Two patients on this list have nearly the same name and date of birth.</p></div>
+    <p class="lede">Confirm two patient identifiers before ordering. Two fictitious patients have nearly identical names; select by MRN and DOB, not name alone.</p></div>
     <div class="grid2">
       <form class="panel stack" data-form="order" aria-labelledby="ordh">
         <h2 id="ordh">New culture order</h2>
@@ -459,7 +687,7 @@ function vOrder(){
       </form>
       <section class="panel stack" aria-labelledby="lblh">
         <h2 id="lblh">Specimen label</h2>
-        ${created ? `<div class="msg ok">Accession ${showAcc(created.acc)} created for ${esc(pname(patient(created.pid)))}.</div>${labelHTML(created)}
+        ${created ? `<div class="msg ok">Accession ${showAcc(created.acc)} created for ${esc(pname(patient(created.pid)))}.</div>${labelHTML(created)}<div><button type="button" class="small secondary" data-act="print-label">Print specimen label</button></div>
           <div class="row"><a class="btnlink" href="#receive">Go to specimen receipt</a><a href="#case-${created.acc}">Open accession</a></div>`
         : `<p class="lede">The label appears here after you place an order. This lab has no label printer, so you will write the label onto the tube by hand. The layout follows the CLSI AUTO12 arrangement: patient name across the top, then identifiers, accession, test, and collection details.</p>`}
       </section>
@@ -520,9 +748,57 @@ function vReceive(){
   </div>`;
 }
 
+
+const CASE_STATIONS = [
+  ["overview","Case overview","Review the specimen, verify your assigned task, and check workflow progress."],
+  ["specimen","Specimen & receipt","Check identifiers and collection details before accepting the specimen."],
+  ["setup","Culture setup","Select the media or bottles inoculated and record incubation conditions."],
+  ["microscopy","Gram stain","Document cellular findings and organism morphologies from your lab observation."],
+  ["culture","Plate readings","Record each day’s observations on the media you actually examined."],
+  ["identification","Identification & AST","Enter isolates and susceptibility measurements from your bench testing."],
+  ["report","Report & release","Review notifications, report readiness, and the released result history."]
+];
+function suggestedStation(a){
+  if(!a.receipt || !a.receipt.ok) return "specimen";
+  if(criticalDue(a)) return "report";
+  if(!a.media) return "setup";
+  if(!a.gram && a.culture==="Blood culture") return "microscopy";
+  if(!a.reads.length) return "culture";
+  if(!a.isolates.length && !a.stmt) return "identification";
+  return "report";
+}
+function tabProps(id){return `data-case-section="${id}"${ui.caseTab===id ? "" : " hidden"}`;}
+function caseStationState(a){return {
+  overview: true,
+  specimen: !!(a.receipt && a.receipt.ok),
+  setup: !!a.media,
+  microscopy: !!a.gram,
+  culture: !!a.reads.length,
+  identification: !!a.isolates.length,
+  report: !!a.reports.length
+};}
+function caseReadiness(a){return [
+  ["Specimen accepted",!!(a.receipt && a.receipt.ok)],
+  ["Culture setup saved",!!a.media],
+  ["Plate read or isolate recorded",!!(a.reads.length || a.isolates.length)],
+  ["Culture interpretation entered",!!(a.stmt && a.stmt.trim()) || !!a.isolates.length],
+  ["Isolates identified (if present)",a.isolates.every(i=>i.method!=="Pending identification" && !/^unknown\b/i.test(i.name))],
+  ["Critical communication complete",!criticalDue(a)]
+];}
+function benchSummaryText(a){
+  const p=patient(a.pid);
+  const lines=["CLINICAL MICROBIOLOGY — STUDENT BENCH SUMMARY", "EDUCATIONAL SIMULATION ONLY — FICTITIOUS PATIENT", "", `Technologist: ${S.tech || "(not signed in)"}`, `Case: ${showAcc(a.acc)} | ${a.culture} | ${status(a)}`, `Patient: ${pname(p)} | MRN ${p.mrn} | DOB ${fmtDate(p.dob)}`, `Source/site: ${a.source} — ${a.site}`, `Collected: ${fmt(a.collected)} | Received: ${a.receipt ? fmt(a.receipt.at) : "Pending"}`, "", "SPECIMEN / SETUP", a.receipt ? `${a.receipt.ok ? "Accepted" : "Rejected"} by ${a.receipt.by}${a.receipt.reason ? " — "+a.receipt.reason : ""}` : "Receipt pending", a.media ? `Media: ${a.media.list.join(", ")}; ${a.media.notes || "No incubation note"}` : "Media not entered", "", "GRAM STAIN", a.gram ? `PMNs: ${a.gram.pmn}; SEC: ${a.gram.epi}; Organisms: ${a.gram.orgs.length ? a.gram.orgs.map(o=>o.qty+" "+o.morph).join("; ") : "None seen"}` : "Not entered", "", "CULTURE READS", ...(!a.reads.length ? ["No reads entered"] : a.reads.map(r=>`Day ${r.day}: ${r.medium ? r.medium+" — " : ""}${r.growth ? r.growth+"; " : ""}${r.hemolysis && r.hemolysis!=="Not assessed" ? "Hemolysis "+r.hemolysis+"; " : ""}${r.note || "(No descriptive note)"}`)), "", "ISOLATES / SUSCEPTIBILITY"];
+  if(!a.isolates.length) lines.push("No isolates entered");
+  a.isolates.forEach((i,ix)=>{lines.push(`${ix+1}. ${i.name} — ${i.qty}; ID: ${i.method}`);(i.tests||[]).forEach(t=>lines.push(`   ID TEST ${t.test}: ${t.result}${t.note ? "; "+t.note : ""}`));i.ast.forEach(r=>lines.push(`   AST ${r.drug}: ${r.value} ${r.unit}; ${r.interp}; ${r.report ? "Reported" : "Suppressed"}`));});
+  lines.push("", "CULTURE INTERPRETATION", a.stmt || "Not entered", "", "CRITICAL COMMUNICATION", ...(!a.calls.length ? ["None logged"] : a.calls.map(c=>`${fmt(c.at)} — ${c.name}, ${c.cred}, ${c.where}; read-back ${c.readback ? "yes" : "no"}`)), "", "RELEASED REPORTS", ...(!a.reports.length ? ["None"] : a.reports.map(r=>`Version ${r.version}: ${r.type} — ${fmt(r.at)} — ${r.by}`)), "", "This summary records student-entered evidence; it does not indicate competency or scientific correctness.");
+  return lines.join("\n");
+}
+function benchSummaryHTML(a){return `<div class="report"><h2>Student bench summary</h2><p><strong>Educational simulation · fictitious patient</strong></p><div style="white-space:pre-wrap;font:11px/1.5 ui-monospace,Consolas,monospace;margin-top:16px">${esc(benchSummaryText(a))}</div></div>`;}
+
 function vCase(acc){
   const a = S.accessions.find(x => x.acc === acc);
-  if(!a) return `<div class="panel stack"><h1>Accession not found</h1><p>No accession ${esc(showAcc(acc))} exists in this browser. If you worked on it on another computer, load your save code on the Storage test screen.</p><p><a href="#worklist">Back to worklist</a></p></div>`;
+  if(!a) return `<div class="panel stack"><h1>Accession not found</h1><p>No accession ${esc(showAcc(acc))} exists in this browser. If you worked on it on another computer, load its save file on the Save &amp; transfer screen.</p><p><a href="#worklist">Back to worklist</a></p></div>`;
+  if(ui.caseAcc !== acc){ ui.caseAcc=acc; ui.caseTab=suggestedStation(a); ui.caseDirty=false; }
   const p = patient(a.pid), st = status(a), cx = CULTURES[a.culture];
   const rejected = st === "Rejected", received = a.receipt && a.receipt.ok;
   const locked = !received;
@@ -548,15 +824,36 @@ function vCase(acc){
         <label style="font-weight:400;display:flex;gap:6px;align-items:center;padding-bottom:8px"><input type="checkbox" name="report" checked> Report</label>
         <button type="submit" class="secondary">Add result</button>
       </form>
+      <div class="biochem-panel">
+        <h4>Biochemical / identification reactions</h4>
+        <p class="helptext">Record the reaction observed in your lab. This simulator does not infer identification from reactions.</p>
+        ${(iso.tests || []).length ? `<div class="tablewrap"><table><thead><tr><th>Test</th><th>Reaction</th><th>Observation</th><th>Action</th></tr></thead><tbody>${iso.tests.map((t,ti)=>`<tr><td>${esc(t.test)}</td><td><strong>${esc(t.result)}</strong></td><td>${esc(t.note)}</td><td><button type="button" class="small secondary" data-act="del-test" data-ix="${ix}" data-tx="${ti}">Remove</button></td></tr>`).join("")}</tbody></table></div>` : `<p class="lab-mini">No identification reactions entered yet.</p>`}
+        <form class="formgrid" data-form="biochem" data-ix="${ix}">
+          <div class="field"><label for="bt-${ix}">Biochemical test</label><select id="bt-${ix}" name="test">${opts(BIOCHEM)}</select></div>
+          <div class="field"><label for="br-${ix}">Observed reaction</label><select id="br-${ix}" name="result">${opts(["Positive","Negative","Variable","A/A","K/A","K/K","No reaction","Other"])}</select></div>
+          <div class="field"><label for="bn-${ix}">Observation / details</label><input id="bn-${ix}" name="note" placeholder="e.g., gas+, no H2S"></div>
+          <div class="field" style="justify-content:end"><button type="submit" class="secondary">Add test reaction</button></div>
+        </form>
+      </div>
+      <form class="formgrid" data-form="update-isolate" data-ix="${ix}" aria-label="Update identification for isolate ${ix+1}">
+        <div class="field"><label for="in-${ix}">Confirmed organism / label</label><input id="in-${ix}" name="name" required value="${esc(iso.name)}"></div>
+        <div class="field"><label for="im-${ix}">ID method</label><select id="im-${ix}" name="method">${opts(ID_METHODS,iso.method)}</select></div>
+        <div class="field" style="justify-content:end"><button type="submit">Update identification</button></div>
+      </form>
     </div>`).join("");
 
   const calls = a.calls.map(c => `<li><div><strong>${esc(c.name)}, ${esc(c.cred)}</strong> · ${esc(c.where)} · read-back ${c.readback ? "confirmed" : "<strong>not obtained</strong>"}${validCall(c) ? "" : " · <strong>does not meet policy</strong>"}</div>
       <div>${esc(c.result)}</div><div class="meta">Called ${fmt(c.at)} · documented by ${esc(c.by)}</div></li>`).join("");
 
-  const reports = a.reports.slice().reverse().map(r => `<details><summary>Version ${r.version} · ${esc(r.type.toUpperCase())} · ${fmt(r.at)} · ${esc(r.by)}</summary>${r.html}</details>`).join("");
+  const reports = a.reports.slice().reverse().map(r => `<details><summary>Version ${r.version} · ${esc(r.type.toUpperCase())} · ${fmt(r.at)} · ${esc(r.by)}</summary>${safeReportHTML(r.html)}</details>`).join("");
   const hasFinal = a.reports.some(r => r.type === "Final");
+  const stage=CASE_STATIONS.find(x=>x[0]===ui.caseTab)||CASE_STATIONS[0];
+  const done=caseStationState(a);
+  const stageIndex=CASE_STATIONS.findIndex(x=>x[0]===stage[0]);
+  const ready=caseReadiness(a);
 
-  return `<div class="stack">
+  return `<div class="stack case-page">
+    <div class="case-top"><a href="#worklist">← Back to worklist</a><div class="actionrow"><button type="button" class="small secondary" data-act="print-label">Print label</button><button type="button" class="small secondary" data-act="print-bench">Print bench summary</button><button type="button" class="small secondary" data-act="download-bench">Download summary</button></div></div>
     <div class="casehead"><h1>${showAcc(a.acc)}</h1><span class="pill ${st.replace(" ","-")}">${esc(st)}</span>
       ${a.priority==="STAT" ? '<span class="pill stat">STAT</span>' : ""}${a.example ? '<span class="pill ex">Example</span>' : ""}
       ${criticalDue(a) ? '<span class="pill crit">Critical call due</span>' : ""}</div>
@@ -572,10 +869,45 @@ function vCase(acc){
       <div><div class="k">Ordering provider</div><div class="v">${esc(a.provider)}</div></div>
     </div>
 
+    <div class="case-shell">
+      <aside class="case-rail" aria-label="Accession workstations">
+        <nav class="rail-nav" aria-label="Laboratory workstations">
+          <div class="rail-header"><span class="eyebrow">CASE WORKSPACE</span><strong>${showAcc(a.acc)}</strong></div>
+          ${CASE_STATIONS.map((s,i)=>`<button type="button" class="station-btn" data-act="case-tab" data-tab="${s[0]}" ${ui.caseTab===s[0] ? 'aria-current="step"' : ''}><span class="station-n ${done[s[0]] ? "complete" : ""}">${done[s[0]] ? "✓" : i+1}</span><span class="station-label">${esc(s[1])}</span>${done[s[0]] && s[0]!=="overview" ? '<span class="station-flag">Done</span>' : ""}</button>`).join("")}
+        </nav>
+        <p class="mobile-rail-hint">Swipe the station menu to access the other workflow steps →</p>
+        <div class="rail-note"><strong>Simulation lab</strong>Save the form in each station before moving on. Submit the bench summary as directed by your instructor.</div>
+      </aside>
+      <div class="case-stage">
+        <div class="station-heading"><div><span class="eyebrow">STATION ${stageIndex+1} / ${CASE_STATIONS.length}</span><h2>${esc(stage[1])}</h2><p>${esc(stage[2])}</p></div><span class="station-count">${done[stage[0]] ? "RECORDED" : "IN PROGRESS"}</span></div>
+        <section class="station-intro" ${tabProps("specimen")} aria-label="Specimen verification">
+          <h3>Specimen verification</h3><p>Use the accession number and patient identifiers to compare the order to the simulated tube. A completed order is not the same as specimen acceptance.</p>
+          ${labelHTML(a)}
+          <div class="worksheet-actions"><button type="button" data-act="go-receive" ${a.receipt ? "disabled" : ""}>${a.receipt ? (a.receipt.ok ? "Specimen accepted" : "Specimen rejected") : "Open specimen receipt"}</button><button type="button" class="secondary" data-act="print-label">Print label</button></div>
+          ${a.receipt ? `<p class="helptext">Disposition: ${a.receipt.ok ? "Accepted" : "Rejected"} ${fmt(a.receipt.at)} by ${esc(a.receipt.by)}${a.receipt.reason ? ". Reason: "+esc(a.receipt.reason) : ""}</p>` : ""}
+        </section>
+
+    <section class="panel stack" ${tabProps("overview")} aria-label="Workflow progress">
+      <div class="row" style="justify-content:space-between;align-items:center"><h2>Workflow progress</h2><span class="pill ${st.replace(" ","-")}">${esc(st)}</span></div>
+      <div class="checklist">
+        ${[
+          ["Order placed",true],
+          ["Specimen accepted",!!received],
+          ["Culture setup",!!a.media],
+          ["Microscopy / reads",!!a.gram || !!a.reads.length],
+          ["Result documented",!!a.isolates.length || !!a.stmt],
+          ["Report released",a.reports.length>0]
+        ].map(([name,done],ix,all)=>`<div class="step ${done ? "done" : all.slice(0,ix).every(v=>v[1]) ? "active":"locked"}"><span class="num">STEP ${ix+1} ${done ? "✓" : ""}</span><strong>${name}</strong></div>`).join("")}
+      </div>
+      <p class="helptext">${rejected ? "Specimen rejected. Workup cannot proceed." : criticalDue(a) ? "Critical result communication is required before report release." : !received ? "Receive and verify the specimen before performing the workup." : "Document your actual laboratory findings. Use the culture report to communicate results, not only the bench notes."}</p>
+    </section>
+    <section class="station-intro" ${tabProps("overview")} aria-label="Next action and student submission"><h3>Next action: ${esc(nextStep(a))}</h3>
+      <p>Work through the station menu in the order assigned by your instructor. Do not enter results that were not observed. The record is saved only in this browser until you export it.</p>
+      <div class="worksheet-actions"><button type="button" data-act="case-tab" data-tab="${suggestedStation(a)}">Go to recommended station</button><button type="button" class="secondary" data-act="download-bench">Download current bench summary</button></div></section>
     ${!a.receipt ? `<div class="msg warn">This specimen has not been received. Workup opens after it is accepted on the <a href="#receive">Specimen receipt</a> screen.</div>` : ""}
     ${rejected ? `<div class="msg crit">Rejected ${fmt(a.receipt.at)} by ${esc(a.receipt.by)}: ${esc(a.receipt.reason)}. ${esc(a.receipt.note)}</div>` : ""}
 
-    ${criticalRequired(a) ? `<section class="critbox" aria-labelledby="crith">
+    ${criticalRequired(a) ? `<section class="critbox" ${tabProps("report")} aria-labelledby="crith">
       <h2 id="crith">Critical result: organisms seen in a ${esc(a.source)} specimen</h2>
       <p>Notify the caregiver immediately, ask for a read-back, and document the call before releasing any report. Record the person's full name. A first name alone does not meet policy.</p>
       ${calls ? `<ul class="loglist">${calls}</ul>` : ""}
@@ -592,8 +924,8 @@ function vCase(acc){
       </form>
     </section>` : ""}
 
-    ${rejected ? "" : `<div class="grid2">
-      <form class="panel stack" data-form="media" aria-labelledby="mh">
+    ${rejected ? "" : `<div class="case-grid">
+      <form class="panel stack" ${tabProps("setup")} data-form="media" aria-labelledby="mh">
         <h2 id="mh">Setup</h2>
         <fieldset ${locked?"disabled":""}><legend>Media and bottles inoculated <small style="font-weight:400;color:var(--muted)">(typical setup preselected; edit to match your SOP)</small></legend>
           <div class="checks">${MEDIA.map(m => `<label><input type="checkbox" name="m" value="${esc(m)}"${mediaSel.includes(m)?" checked":""}> ${esc(m)}</label>`).join("")}</div>
@@ -603,7 +935,7 @@ function vCase(acc){
         <div><button type="submit" ${locked?"disabled":""}>Save setup</button></div>
       </form>
 
-      <form class="panel stack" data-form="gram" aria-labelledby="gh">
+      <form class="panel stack" ${tabProps("microscopy")} data-form="gram" aria-labelledby="gh">
         <h2 id="gh">Gram stain</h2>
         <div class="formgrid">
           <div class="field"><label for="g-p">PMNs</label><select id="g-p" name="pmn" ${locked?"disabled":""}>${opts(CELLS, a.gram ? a.gram.pmn : "None seen")}</select></div>
@@ -618,29 +950,35 @@ function vCase(acc){
       </form>
     </div>
 
-    <section class="panel stack" aria-labelledby="rdh">
+    <section class="panel stack" ${tabProps("culture")} aria-labelledby="rdh">
       <h2 id="rdh">Plate reads</h2>
-      ${a.reads.length ? `<ul class="loglist">${a.reads.map(r => `<li><div><strong>Day ${esc(r.day)}</strong> · ${esc(r.note)}</div><div class="meta">${fmt(r.at)} · ${esc(r.by)}</div></li>`).join("")}</ul>` : `<p style="color:var(--muted)">No reads recorded.</p>`}
-      <form class="orgrow" data-form="read" aria-label="Add plate read">
-        <div class="field" style="flex:0 1 90px"><label for="rd-d">Day</label><input id="rd-d" name="day" type="number" min="0" max="42" class="mono" value="${a.reads.length ? Math.max(...a.reads.map(r=>+r.day||0))+1 : 1}" ${locked?"disabled":""} required></div>
-        <div class="field" style="flex:1 1 320px"><label for="rd-n">Observation</label><input id="rd-n" name="note" ${locked?"disabled":""} required placeholder="Example: BAP heavy growth of beta-hemolytic, cream-colored colonies; MAC no growth"></div>
-        <button type="submit" class="secondary" ${locked?"disabled":""}>Add read</button>
+      ${a.reads.length ? `<ul class="loglist">${a.reads.map(r => `<li><div><strong>Day ${esc(r.day)}${r.medium ? " · "+esc(r.medium) : ""}</strong>${r.growth ? " · "+esc(r.growth) : ""}${r.hemolysis && r.hemolysis!=="Not assessed" ? " · "+esc(r.hemolysis)+" hemolysis" : ""}${r.note ? " · "+esc(r.note) : ""}</div><div class="meta">${fmt(r.at)} · ${esc(r.by)}</div></li>`).join("")}</ul>` : `<p style="color:var(--muted)">No reads recorded.</p>`}
+      <p class="helptext">Record one medium at a time. Enter observations from the physical plate, not an assumed organism identity. Hemolysis applies to a blood agar plate when assessed.</p>
+      <form class="stack" data-form="read" aria-label="Add plate read">
+        <div class="formgrid">
+          <div class="field"><label for="rd-d">Culture day</label><input id="rd-d" name="day" type="number" min="0" max="42" class="mono" value="${a.reads.length ? Math.max(...a.reads.map(r=>+r.day||0))+1 : 1}" ${locked?"disabled":""} required></div>
+          <div class="field"><label for="rd-m">Medium examined</label><select id="rd-m" name="medium" ${locked?"disabled":""}><option value="">Select medium</option>${(a.media?.list || cx.media).map(m=>`<option value="${esc(m)}">${esc(m)}</option>`).join("")}</select></div>
+          <div class="field"><label for="rd-g">Growth</label><select id="rd-g" name="growth" ${locked?"disabled":""}>${opts(["No growth","Rare","Light","Moderate","Heavy","Broth only","Other"])}</select></div>
+          <div class="field"><label for="rd-h">Hemolysis (when applicable)</label><select id="rd-h" name="hemolysis" ${locked?"disabled":""}>${opts(["Not assessed","Alpha","Beta","Gamma"])}</select></div>
+        </div>
+        <div class="field"><label for="rd-n">Colony appearance / bench notes <small>Describe color, size, morphology, hemolysis, or additional findings. No growth may be recorded without a descriptive note.</small></label><textarea id="rd-n" name="note" ${locked?"disabled":""} rows="2" placeholder="e.g., small gray colonies; no growth on the companion medium"></textarea></div>
+        <div><button type="submit" ${locked?"disabled":""}>Save plate observation</button></div>
       </form>
     </section>
 
-    <section class="panel stack" aria-labelledby="ish">
+    <section class="panel stack" ${tabProps("identification")} aria-labelledby="ish">
       <h2 id="ish">Isolates and susceptibility</h2>
-      <p class="lede" style="font-size:.92rem">Interpret each result from your instructor's breakpoint table. Uncheck Report to suppress a drug from the patient report (selective reporting).</p>
+      <p class="lede" style="font-size:.92rem">Record biochemical reactions under each isolate, then update its identification as evidence becomes available. Enter MIC or zone diameter from the actual test, then interpret using the current organism-specific breakpoint table supplied by your instructor. This simulator does not calculate susceptibility categories. Uncheck Report for selective reporting.</p>
       ${isolates || `<p style="color:var(--muted)">No isolates entered.</p>`}
       <form class="orgrow" data-form="isolate" aria-label="Add isolate">
-        <div class="field"><label for="is-n">Organism identification</label><input id="is-n" name="name" required ${locked?"disabled":""} placeholder="Genus species"></div>
+        <div class="field"><label for="is-n">Isolate label / current ID <small>Use “Unknown A” until identification is complete.</small></label><input id="is-n" name="name" required ${locked?"disabled":""} placeholder="Unknown A"></div>
         <div class="field"><label for="is-q">Quantity</label><select id="is-q" name="qty" ${locked?"disabled":""}>${opts(QTY[cx.qty])}</select></div>
         <div class="field"><label for="is-m">ID method</label><select id="is-m" name="method" ${locked?"disabled":""}>${opts(ID_METHODS)}</select></div>
         <button type="submit" class="secondary" ${locked?"disabled":""}>Add isolate</button>
       </form>
     </section>
 
-    <form class="panel stack" data-form="flags" aria-labelledby="flh">
+    <form class="panel stack" ${tabProps("report")} data-form="flags" aria-labelledby="flh">
       <h2 id="flh">Infection prevention and public health</h2>
       <div class="checks">
         <label><input type="checkbox" name="ip" ${a.flags.ip?"checked":""} ${locked?"disabled":""}> Copy to Infection Prevention (for example MRSA, VRE, ESBL, CRE)</label>
@@ -650,8 +988,10 @@ function vCase(acc){
       <div><button type="submit" class="secondary" ${locked?"disabled":""}>Save flags</button></div>
     </form>`}
 
-    <section class="panel stack" aria-labelledby="reph">
-      <h2 id="reph">Reports</h2>
+    <section class="panel stack" ${tabProps("report")} aria-labelledby="reph">
+      <div class="row" style="justify-content:space-between"><h2 id="reph">Reports</h2>${a.reports.length ? '<span class="pill Final">Versioned history</span>' : ''}</div>
+      <p class="helptext">Before releasing a final result, confirm the following documentation. A preliminary result may be released earlier when reportable findings are available, subject to critical communication rules.</p>
+      <div class="readiness" aria-label="Final report checklist">${ready.map(([label,ok])=>`<div class="readiness-item ${ok ? "ready" : ""}"><span aria-hidden="true">${ok ? "✓" : "○"}</span>${esc(label)}</div>`).join("")}</div>
       ${a.receipt ? `<form class="stack" data-form="release">
         ${rejected ? "" : `<div class="field"><label for="st">Culture result statement <small>Appears on the report. Example: No growth at 2 days, culture continuing.</small></label><textarea id="st" name="stmt">${esc(a.stmt)}</textarea></div>`}
         ${hasFinal ? `<fieldset><legend>Corrected report</legend>
@@ -667,8 +1007,10 @@ function vCase(acc){
         </div>
       </form>` : `<p style="color:var(--muted)">Reports become available after the specimen is received.</p>`}
       <details><summary>Preview of the next report</summary>${reportHTML(a, hasFinal ? "Corrected" : "Preliminary", { preview:true })}</details>
-      ${reports ? `<h3>Released versions</h3>${reports}` : `<p style="color:var(--muted)">No reports released.</p>`}
+      ${reports ? `<h3>Released versions</h3><div><button type="button" class="small secondary" data-act="print-latest">Print latest report</button></div>${reports}` : `<p style="color:var(--muted)">No reports released.</p>`}
     </section>
+      </div><!-- case stage -->
+    </div><!-- case shell -->
     <datalist id="druglist">${DRUGS.map(d => `<option value="${esc(d)}">`).join("")}</datalist>
   </div>`;
 }
@@ -713,7 +1055,7 @@ function vAudit(){
   const list = S.audit.filter(e => !ui.auditFilter || e.acc === ui.auditFilter).slice().reverse();
   return `<div class="stack">
     <div class="stack" style="gap:6px"><h1>Audit log</h1>
-    <p class="lede">Every action in this browser, stamped with the signed-in tech and the time. Entries cannot be edited or deleted from this screen.</p></div>
+    <p class="lede">Recorded changes in this browser, stamped with the signed-in technologist. This teaching log is not tamper-proof and can be erased with simulator storage.</p></div>
     <form class="panel row" data-form="auditfilter" aria-label="Filter audit log">
       <div class="field"><label for="af">Accession</label><select id="af" name="acc" class="mono"><option value="">All accessions</option>${accs.map(x => `<option value="${x}"${x===ui.auditFilter?" selected":""}>${showAcc(x)}</option>`).join("")}</select></div>
       <button type="submit" class="secondary">Filter</button>
@@ -731,8 +1073,8 @@ function vStorage(){
   const kb = (bytesUsed()*2/1024).toFixed(1);
   const pend = ui.importPending;
   return `<div class="stack">
-    <div class="stack" style="gap:6px"><h1>Storage test</h1>
-    <p class="lede">Everything in this simulator is saved inside this browser on this computer. Nothing is sent to a server. Use this screen to find out whether a lab computer keeps the work between sessions, and to move work between computers with a save code.</p></div>
+    <div class="stack" style="gap:6px"><h1>Save & transfer</h1>
+    <p class="lede">Everything in this simulator is saved inside this browser on this computer. No simulator records are sent to an application server. Browser data can be erased by device policy or user action. Use this screen to test persistence and transfer work with a save file. Never enter real patient information.</p></div>
 
     <div class="tiles">
       <div class="tile ${env.storageOK?"good":"bad"}"><span class="k">Browser storage</span><span class="v">${env.storageOK ? "Working" : "Blocked"}</span></div>
@@ -763,7 +1105,7 @@ function vStorage(){
 
       <section class="panel stack" aria-labelledby="sh">
         <h2 id="sh">Save code</h2>
-        <p style="font-size:.92rem">A save code is a copy of all simulator data in this browser. Paste it into a Blackboard submission, an email to yourself, or a OneDrive file, then load it on any computer.</p>
+        <p style="font-size:.92rem">A save code contains your simulated patient cases, audit history, and report versions. Use a course-approved submission or storage method, then load it on any computer. Never put real patient information in a save file.</p>
         <div class="row"><button type="button" data-act="copy">Copy save code</button>
           ${env.framed ? "" : `<button type="button" class="secondary" data-act="download">Download save file</button>`}</div>
         <label for="savecode">Save code for this browser</label>
@@ -788,6 +1130,40 @@ function vStorage(){
     </form>
   </div>`;
 }
+function vGuide(){
+  const a=S.accessions.find(x=>x.example && x.culture==="Blood culture");
+  const b=S.accessions.find(x=>x.example && x.culture==="Urine culture");
+  return `<div class="stack">
+    <div class="stack" style="gap:6px"><div class="eyebrow">Student orientation</div><h1>Clinical microbiology lab exercises</h1>
+      <p class="lede">A practice LIS for medical laboratory technician students. No real patient records, clinical decisions, or live laboratory systems are involved.</p></div>
+    <div class="grid2">
+      <section class="panel stack"><h2>Exercise 1 · Specimen receipt</h2>
+        <span class="pill">Introductory</span>
+        <p>Locate the example urine culture${b ? ` (<a href="#case-${b.acc}">${showAcc(b.acc)}</a>)` : ""}. Read its patient banner and collection information, then use <a href="#receive">Specimen receipt</a>.</p>
+        <ol class="steps"><li>Retrieve the correct accession using the number and check character.</li><li>Verify identifiers, container/source, collection time, and transport conditions against the simulated specimen label.</li><li>Accept or reject according to the information supplied during your classroom exercise.</li><li>Document culture setup and the specimen's next steps.</li></ol>
+      </section>
+      <section class="panel stack"><h2>Exercise 2 · Positive blood culture</h2>
+        <span class="pill stat">Critical-result practice</span>
+        <p>Open the example blood culture${a ? ` (<a href="#case-${a.acc}">${showAcc(a.acc)}</a>)` : ""}. The aerobic bottle has flagged positive and a Gram stain is pending.</p>
+        <ol class="steps"><li>Record Gram-stain observations provided by your instructor.</li><li>Recognize whether immediate caregiver notification is required.</li><li>Document the recipient, result communicated, time, and read-back.</li><li>Release a preliminary result. Continue working toward final culture identification.</li></ol>
+      </section>
+    </div>
+    <div class="grid2">
+      <section class="panel stack"><h2>Exercise 3 · Culture and AST</h2>
+        <ol class="steps"><li>Create a culture order for the correct fictitious patient.</li><li>Receive the specimen and record inoculated media.</li><li>Enter a plate read and organism identification from instructor-provided evidence.</li><li>Record MIC or disk diffusion results. Interpret with the supplied breakpoint table, not guesses.</li><li>Decide which antimicrobials should appear on the report and issue a final result.</li><li>Review the <a href="#audit">audit log</a> for documentation completeness.</li></ol>
+      </section>
+      <section class="panel stack"><h2>Exercise 4 · Correction and recovery</h2>
+        <ol class="steps"><li>Identify an instructor-provided error in a released result.</li><li>Document the correction reason and notification.</li><li>Issue a corrected report and compare versions.</li><li>Use <a href="#storage">Save &amp; transfer</a> to download the complete simulated record.</li><li>Import the save file on another device or browser, then confirm the audit trail persists.</li></ol>
+      </section>
+    </div>
+    <div class="callout stack"><h2>Instructor implementation notes</h2>
+      <p>Use instructor-supplied specimen observations, organisms, and susceptibility breakpoints. This open-ended simulator records student interpretations but does not determine whether they are scientifically correct or assign a grade.</p>
+      <p><strong>Submitting student work:</strong> Open your accession, download its bench summary (text file), and submit it as directed in Blackboard. The system does not transmit or automatically grade student work.</p><p>Local storage and downloaded save files are not secure medical record storage. Do not enter actual patient identifiers, protected health information, or institution-specific passwords. The audit history is instructional, not tamper-proof.</p>
+      <p><strong>Publication:</strong> Put the HTML file at the repository root as <code>index.html</code> and enable GitHub Pages for that branch. No server or build tools are needed.</p>
+    </div>
+  </div>`;
+}
+
 function exportCode(){ return JSON.stringify({ app: APP, exportedAt: nowISO(), fromBrowser: env.device.id, data: S }); }
 
 /* ---------- render ---------- */
@@ -800,6 +1176,7 @@ function render(){
   else if(r.name === "case") html = vCase(r.acc);
   else if(r.name === "audit") html = vAudit();
   else if(r.name === "storage") html = vStorage();
+  else if(r.name === "guide") html = vGuide();
   else html = vWorklist();
   $("#view").innerHTML = html;
   if(ui.focusMain){ ui.focusMain = false; const h = $("#view h1"); if(h){ h.setAttribute("tabindex","-1"); h.focus({preventScroll:false}); } }
@@ -808,7 +1185,7 @@ window.addEventListener("hashchange", () => { if(ui.keepFlash) ui.keepFlash = fa
 
 /* ---------- actions ---------- */
 function curCase(){ const r = route(); return r.name === "case" ? S.accessions.find(x => x.acc === r.acc) : null; }
-function commit(msg, kind){ save(); render(); flash(msg, kind || "ok"); }
+function commit(msg, kind){ ui.caseDirty=false; save(); render(); flash(msg, kind || "ok"); }
 
 const forms = {
   tech(f){ const v = f.tech.value.trim(); if(!v) return; const old = S.tech; S.tech = v; audit("", "Tech signed in", old ? `Changed from ${old}` : ""); commit(`Signed in as ${v}. Every action is stamped with this name.`); },
@@ -816,7 +1193,7 @@ const forms = {
     if(needTech()) return;
     const collected = fromLocalInput(f.collected.value);
     if(!f.pid.value){ flash("Select a patient.", "crit"); return; }
-    if(new Date(collected) > new Date(Date.now()+5*60000)){ flash("Collection time is in the future. Check the date and time.", "crit"); return; }
+    if(!withinDateBounds(collected)){ flash("Enter a valid collection date and time that is not in the future.", "crit"); return; }
     const a = blankAcc(newAccession(), f.pid.value, f.culture.value, f.site.value.trim(), f.priority.value, f.provider.value, collected, f.collector.value.trim().toUpperCase());
     S.accessions.push(a); ui.lastCreated = a.acc;
     audit(a.acc, "Order placed", `${a.culture}, ${a.priority}, ${a.site}`);
@@ -830,13 +1207,17 @@ const forms = {
   accept(f){
     if(needTech()) return;
     const a = S.accessions.find(x => x.acc === f.dataset.acc); if(!a) return;
-    a.receipt = { at: fromLocalInput(f.at.value) || nowISO(), by: S.tech, ok: true };
+    if(a.receipt){ flash("This specimen has already been processed at receipt.","crit"); return; }
+    const receivedAt = fromLocalInput(f.at.value);
+    if(!withinDateBounds(receivedAt,a.collected)){ flash("Receipt cannot precede collection or occur in the future. Check both dates and times.","crit"); return; }
+    a.receipt = { at: receivedAt, by: S.tech, ok: true };
     audit(a.acc, "Specimen accepted", "All identification checks confirmed");
-    ui.receiveAcc = null; ui.keepFlash = true; location.hash = "case-" + a.acc; commit(`${showAcc(a.acc)} accepted. Set up media next.`);
+    ui.receiveAcc = null; ui.caseAcc=a.acc; ui.caseTab="setup"; ui.keepFlash = true; location.hash = "case-" + a.acc; commit(`${showAcc(a.acc)} accepted. Set up media next.`);
   },
   reject(f){
     if(needTech()) return;
     const a = S.accessions.find(x => x.acc === f.dataset.acc); if(!a) return;
+    if(a.receipt){ flash("This specimen has already been processed at receipt.","crit"); return; }
     a.receipt = { at: nowISO(), by: S.tech, ok: false, reason: f.reason.value, note: f.note.value.trim() };
     audit(a.acc, "Specimen rejected", `${a.receipt.reason}. ${a.receipt.note}`);
     ui.receiveAcc = null; commit(`${showAcc(a.acc)} rejected: ${a.receipt.reason}.`, "warn");
@@ -846,30 +1227,65 @@ const forms = {
     const list = [...f.querySelectorAll('input[name="m"]:checked')].map(x => x.value);
     if(!list.length){ flash("Select at least one medium or bottle.", "crit"); return; }
     a.media = { list, notes: f.notes.value.trim(), at: nowISO(), by: S.tech };
-    audit(a.acc, "Setup saved", list.join(", ")); commit("Setup saved.");
+    audit(a.acc, "Setup saved", list.join(", ")); ui.caseTab="microscopy"; commit("Setup saved. Continue with microscopy or plate reading.");
   },
   gram(f){
     if(needTech()) return; const a = curCase(); if(!a) return;
     const orgs = [...f.querySelectorAll("[data-orgrow]")].map(r => ({ morph: r.querySelector('[name="morph"]').value, qty: r.querySelector('[name="oqty"]').value })).filter(o => o.morph);
     a.gram = { pmn: f.pmn.value, epi: f.epi.value, orgs, at: nowISO(), by: S.tech };
     audit(a.acc, "Gram stain saved", orgs.length ? orgs.map(o => o.qty+" "+o.morph).join("; ") : "No organisms seen");
-    if(criticalDue(a)) commit("Gram stain saved. This is a critical result. Call it and document the call before releasing a report.", "crit");
+    if(criticalDue(a)){ ui.caseTab="report"; commit("Gram stain saved. This is a critical result. Call it and document the call before releasing a report.", "crit"); }
     else commit("Gram stain saved.");
   },
   read(f){
     if(needTech()) return; const a = curCase(); if(!a) return;
-    a.reads.push({ day: f.day.value, note: f.note.value.trim(), at: nowISO(), by: S.tech });
-    audit(a.acc, `Day ${f.day.value} read`, f.note.value.trim()); commit("Read recorded.");
+    if(!a.media){ flash("Save the culture setup before recording plate reads.","crit"); return; }
+    const medium=f.medium.value;
+    if(!medium || !a.media.list.includes(medium)){ flash("Select a medium recorded in the specimen setup.","crit"); return; }
+    const hemolysis=f.hemolysis.value;
+    if(hemolysis!=="Not assessed" && medium!=="BAP"){ flash("Record hemolysis only for the blood agar plate (BAP) in this exercise.","crit"); return; }
+    const growth=f.growth.value, note=f.note.value.trim();
+    if(growth==="Other" && !note){ flash("Describe the growth observation when selecting Other.","crit"); return; }
+    a.reads.push({ day: f.day.value, medium, growth, hemolysis, note, at: nowISO(), by: S.tech });
+    audit(a.acc, `Day ${f.day.value} read`, `${medium}: ${growth}; ${hemolysis}; ${note}`); commit("Plate observation recorded.");
   },
   isolate(f){
     if(needTech()) return; const a = curCase(); if(!a) return;
-    a.isolates.push({ name: f.name.value.trim(), qty: f.qty.value, method: f.method.value, ast: [], at: nowISO(), by: S.tech });
+    a.isolates.push({ name: f.name.value.trim(), qty: f.qty.value, method: f.method.value, ast: [], tests: [], at: nowISO(), by: S.tech });
     audit(a.acc, "Isolate added", `${f.qty.value} ${f.name.value.trim()} by ${f.method.value}`); commit("Isolate added.");
+  },
+  biochem(f){
+    if(needTech()) return;const a=curCase();if(!a) return;
+    const iso=a.isolates[+f.dataset.ix];if(!iso) return;
+    const test=f.test.value,result=f.result.value,note=f.note.value.trim();
+    if((test==="Other" || result==="Other") && !note){flash("Describe the observation when selecting Other.","crit");return;}
+    if((iso.tests||[]).some(t=>t.test===test)){flash("This reaction is already recorded. Remove the old entry before replacing it.","crit");return;}
+    if(!iso.tests) iso.tests=[];
+    iso.tests.push({test,result,note,at:nowISO(),by:S.tech});
+    audit(a.acc,"Identification reaction entered",`${iso.name}: ${test} — ${result}${note ? "; "+note : ""}`);
+    commit(`${test} reaction saved for ${iso.name}.`);
+  },
+  "update-isolate"(f){
+    if(needTech()) return;const a=curCase();if(!a) return;
+    const iso=a.isolates[+f.dataset.ix];if(!iso) return;
+    const newName=f.name.value.trim(),newMethod=f.method.value;
+    if(!newName){flash("Enter an organism identification or isolate label.","crit");return;}
+    const before=iso.name+" ("+iso.method+")";
+    iso.name=newName;iso.method=newMethod;
+    audit(a.acc,"Isolate identification updated",`${before} → ${newName} (${newMethod})`);
+    commit("Identification updated. Existing AST and reactions are preserved.");
   },
   ast(f){
     if(needTech()) return; const a = curCase(); if(!a) return;
     const iso = a.isolates[+f.dataset.ix]; if(!iso) return;
     const row = { drug: f.drug.value.trim(), value: f.value.value.trim(), unit: f.unit.value, interp: f.interp.value, report: f.report.checked };
+    if(iso.ast.some(r=>r.drug.toLowerCase()===row.drug.toLowerCase())){ flash("This drug is already recorded for the isolate. Remove the old result before replacing it.","crit"); return; }
+    const match=row.value.replace(/,/g,"").match(/^[<>≤≥]?\s*(\d+(?:\.\d+)?)$/);
+    const numeric=match ? Number(match[1]) : NaN;
+    const isZone=row.unit.startsWith("mm");
+    if(!Number.isFinite(numeric) || numeric<=0 || (isZone && numeric>100) || (!isZone && numeric>2048)){
+      flash(isZone ? "Enter a valid inhibition-zone diameter in millimeters, such as 18." : "Enter a valid MIC in µg/mL, such as ≤0.5 or 2.","crit"); return;
+    }
     iso.ast.push(row);
     audit(a.acc, "Susceptibility added", `Isolate ${+f.dataset.ix+1}: ${row.drug} ${row.value} ${row.unit} ${row.interp}${row.report?"":" (suppressed)"}`); commit(`${row.drug} added to isolate ${+f.dataset.ix+1}.`);
   },
@@ -881,6 +1297,7 @@ const forms = {
   call(f){
     if(needTech()) return; const a = curCase(); if(!a) return;
     const c = { name: f.name.value.trim(), cred: f.cred.value, where: f.where.value.trim(), at: fromLocalInput(f.at.value) || nowISO(), result: f.result.value.trim(), readback: f.readback.checked, by: S.tech, recorded: nowISO() };
+    if(!withinDateBounds(c.at)){ flash("Enter a valid call time that is not in the future.","crit"); return; }
     a.calls.push(c);
     audit(a.acc, "Critical call documented", `${c.name}, ${c.cred}; read-back ${c.readback?"confirmed":"NOT obtained"}`);
     if(validCall(c)) commit("Call documented. You can now release a report.");
@@ -893,7 +1310,13 @@ const forms = {
     if(f.stmt) a.stmt = f.stmt.value.trim();
     if(criticalDue(a)){ save(); render(); flash("Report not released. Document the critical call with a full name and confirmed read-back first.", "crit"); return; }
     const rejected = a.receipt && !a.receipt.ok;
-    if(!rejected && !a.stmt && !a.isolates.length && !(a.gram)){ save(); render(); flash("Nothing to report yet. Enter a Gram stain, an isolate, or a culture result statement.", "crit"); return; }
+    if(!rejected && !a.stmt && !a.isolates.length && !a.gram){ flash("Nothing to report yet. Record a Gram stain, a culture result statement, or an isolate.","crit"); return; }
+    if(!rejected && ["Final","Corrected"].includes(type)){
+      if(!a.media){ flash("Cannot finalize: record the culture media or bottles used.","crit"); return; }
+      if(!a.reads.length && !a.isolates.length){ flash("Cannot finalize: record at least one culture read or isolate.","crit"); return; }
+      if(!a.stmt && !a.isolates.length){ flash("Cannot finalize: enter a culture result statement or an organism identification.","crit"); return; }
+      if(a.isolates.some(i=>i.method==="Pending identification" || /^unknown\b/i.test(i.name))){ flash("Cannot finalize: complete the organism identification for each documented isolate.","crit"); return; }
+    }
     let meta = { at: nowISO(), by: S.tech };
     if(type === "Corrected"){
       const reason = f.reason.value.trim(), notified = f.notified.value.trim();
@@ -911,7 +1334,7 @@ const forms = {
     const file = f.file.files && f.file.files[0];
     const done = text => {
       let obj = null; try { obj = JSON.parse(String(text).trim()); } catch(e){}
-      if(!obj || obj.app !== APP || !obj.data || !Array.isArray(obj.data.accessions)){ flash("That is not a Micro LIS save code. Copy the entire code, from the first { to the last }.", "crit"); return; }
+      if(!obj || obj.app !== APP || !validState(obj.data)){ flash("That is not a complete, valid Micro LIS save file. No records were changed.", "crit"); return; }
       ui.importPending = obj.data; render(); flash("Save code is valid. Confirm below to load it.", "info");
     };
     if(file){ const rd = new FileReader(); rd.onload = () => done(rd.result); rd.onerror = () => flash("That file could not be read.", "crit"); rd.readAsText(file); }
@@ -925,10 +1348,44 @@ const forms = {
 };
 
 const acts = {
+  "case-tab"(btn){
+    const next=btn.dataset.tab;
+    if(!CASE_STATIONS.some(s=>s[0]===next)) return;
+    if(ui.caseDirty && next!==ui.caseTab && !window.confirm("You have unsaved entries in this station. Leave without saving?")) return;
+    ui.caseDirty=false; ui.caseTab=next; render();
+    const h=document.querySelector(".station-heading h2"); if(h){h.tabIndex=-1;h.focus({preventScroll:true});}
+  },
+  "go-receive"(){ const a=curCase(); if(!a) return;ui.receiveAcc=a.acc; location.hash="receive"; },
+  "print-bench"(){const a=curCase(); if(a) printContent(benchSummaryHTML(a));},
+  "download-bench"(){
+    const a=curCase(); if(!a) return;
+    try{ const blob=new Blob([benchSummaryText(a)],{type:"text/plain;charset=utf-8"}),u=URL.createObjectURL(blob),el=document.createElement("a"); el.href=u; el.download=`micro-lis-bench-${a.acc}.txt`;document.body.appendChild(el);el.click();el.remove();setTimeout(()=>URL.revokeObjectURL(u),2000);flash("Bench summary downloaded. Review it before submitting to your instructor.","ok");}
+    catch(e){flash("The summary could not be downloaded in this browser. Use Print bench summary instead.","crit");}
+  },
+  theme(){
+    const currentlyDark=document.documentElement.dataset.theme==="dark" || (!document.documentElement.dataset.theme && matchMedia("(prefers-color-scheme: dark)").matches);
+    document.documentElement.dataset.theme=currentlyDark ? "light":"dark";
+    lsSet(THEMEKEY,document.documentElement.dataset.theme);
+    paintNav(route());
+  },
+  "clear-filters"(){
+    if($("#wl-search")){ $("#wl-search").value=""; $("#wl-status").value=""; $("#wl-priority").value=""; filterWorklist(); }
+  },
+  "print-latest"(){
+    const a=curCase(), r=a?.reports[a.reports.length-1];
+    if(!r){ flash("No released report to print.","warn"); return; }
+    printContent(safeReportHTML(r.html));
+  },
+  "print-label"(){
+    const a=curCase() || (ui.lastCreated && S.accessions.find(x=>x.acc===ui.lastCreated));
+    if(!a){ flash("Create an order to print its label.","warn"); return; }
+    printContent(labelHTML(a));
+  },
   "add-org"(btn){ const box = $("#orgrows"); const i = box.querySelectorAll("[data-orgrow]").length + Date.now()%1000; box.insertAdjacentHTML("beforeend", orgRow({morph:"",qty:"Few"}, i)); box.lastElementChild.querySelector("select").focus(); },
   "del-org"(btn){ const row = btn.closest("[data-orgrow]"); const box = $("#orgrows"); if(box.querySelectorAll("[data-orgrow]").length > 1) row.remove(); else { row.querySelector('[name="morph"]').value = ""; } },
   "del-iso"(btn){ if(needTech()) return; const a = curCase(); const ix = +btn.dataset.ix; const iso = a.isolates[ix]; a.isolates.splice(ix,1); audit(a.acc, "Isolate removed", iso.name); commit("Isolate removed.", "warn"); },
   "del-ast"(btn){ if(needTech()) return; const a = curCase(); const iso = a.isolates[+btn.dataset.ix]; const r = iso.ast.splice(+btn.dataset.rx,1)[0]; audit(a.acc, "Susceptibility removed", `${r.drug} from isolate ${+btn.dataset.ix+1}`); commit(`${r.drug} removed.`, "warn"); },
+  "del-test"(btn){ if(needTech()) return;const a=curCase(),iso=a?.isolates[+btn.dataset.ix];if(!iso || !Array.isArray(iso.tests)) return;const t=iso.tests.splice(+btn.dataset.tx,1)[0];if(!t)return;audit(a.acc,"Identification reaction removed",`${iso.name}: ${t.test}`);commit(`${t.test} removed from ${iso.name}.`,"warn"); },
   copy(){ const t = $("#savecode"); t.value = exportCode();
     const fallback = () => { t.focus(); t.select(); flash("Select-all is done. Press Ctrl+C (or Command+C) to copy the save code.", "info"); };
     try { navigator.clipboard.writeText(t.value).then(() => flash("Save code copied. Paste it somewhere you can reach from another computer.", "ok"), fallback); } catch(e){ fallback(); } },
@@ -939,6 +1396,26 @@ const acts = {
   "import-no"(){ ui.importPending = null; render(); flash("Load cancelled. Nothing changed.", "info"); }
 };
 
+function printContent(html){
+  const area=$("#print-area"); area.innerHTML=html;
+  document.body.classList.add("printing");
+  area.hidden=false;
+  // The afterprint event restores the workstation after the print dialog.
+  requestAnimationFrame(()=>window.print());
+}
+window.addEventListener("afterprint",()=>{
+  const area=$("#print-area");
+  if(area){area.innerHTML="";area.hidden=true;}
+  document.body.classList.remove("printing");
+});
+document.addEventListener("input",e=>{
+  if(e.target?.id==="wl-search") filterWorklist();
+  if(e.target?.closest(".case-stage form")) ui.caseDirty=true;
+});
+document.addEventListener("change",e=>{
+  if(["wl-status","wl-priority"].includes(e.target?.id)) filterWorklist();
+  if(e.target?.closest(".case-stage form")) ui.caseDirty=true;
+});
 document.addEventListener("submit", e => {
   const f = e.target.closest("form[data-form]"); if(!f) return;
   e.preventDefault();
@@ -952,9 +1429,11 @@ document.addEventListener("click", e => {
 
 /* ---------- boot ---------- */
 initDevice();
+const preferredTheme = lsGet(THEMEKEY);
+if(["light","dark"].includes(preferredTheme)) document.documentElement.dataset.theme = preferredTheme;
 load();
 render();
-if(!env.storageOK) flash("This browser is blocking storage, so nothing will be kept when the page closes. Use Copy save code on the Storage test screen before you leave.", "crit");
+if(!env.storageOK) flash("This browser is blocking storage, so nothing will be kept when the page closes. Use Copy save code on the Save &amp; transfer screen before you leave.", "crit");
 else if(env.seededThisLoad && !env.deviceIsNew) flash("Simulator data was missing, so the example orders were restored. Your browser ID was kept.", "warn");
 })();
 </script>
