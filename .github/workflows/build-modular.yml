@@ -1,0 +1,59 @@
+name: Build modular MLT SIM-LIS
+
+on:
+  push:
+    branches:
+      - main
+      - feat/modular-blood-bank-microbiology
+    paths:
+      - 'app/**'
+      - 'package.json'
+      - 'vite.config.mjs'
+      - 'postcss.config.cjs'
+      - 'tailwind.config.cjs'
+      - '.github/workflows/build-modular.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+      - name: Build three public site entrypoints
+        run: npm run build
+      - name: Verify independent simulator pages
+        run: |
+          test -s dist/index.html
+          test -s dist/blood-bank/index.html
+          test -s dist/microbiology/index.html
+          test -d dist/site-assets
+          grep -q 'site-assets' dist/blood-bank/index.html
+          grep -q 'site-assets' dist/microbiology/index.html
+      - name: Stage GitHub Pages artifacts
+        run: |
+          mkdir -p blood-bank microbiology
+          cp dist/index.html index.html
+          cp dist/blood-bank/index.html blood-bank/index.html
+          cp dist/microbiology/index.html microbiology/index.html
+          rm -rf site-assets
+          cp -R dist/site-assets site-assets
+          touch .nojekyll
+      - name: Commit compiled output to the active branch
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html blood-bank/index.html microbiology/index.html site-assets .nojekyll
+          if git diff --cached --quiet; then
+            echo 'No changes to generated website'
+          else
+            git commit -m 'build: publish modular department simulator pages'
+            git push origin "HEAD:${GITHUB_REF_NAME}"
+          fi
