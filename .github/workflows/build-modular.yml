@@ -27,6 +27,8 @@ jobs:
           node-version: '22'
       - name: Install dependencies
         run: npm install --no-audit --no-fund
+      - name: Verify isolated department rendering
+        run: npm run test:ssr
       - name: Build three public site entrypoints
         run: npm run build
       - name: Verify independent simulator pages
