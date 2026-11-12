@@ -1,0 +1,1 @@
+import{c as t,R as e}from"./styles-B1LsNIiD.js";import{A as o}from"./App-9O5tPJ0x.js";t.createRoot(document.getElementById("root")).render(e.createElement(e.StrictMode,null,e.createElement(o,{department:"microbiology"})));
